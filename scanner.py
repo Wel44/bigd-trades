@@ -10,6 +10,7 @@ Signals are computed on the ETF proxies and executed on the matching index CFD
 at the next US cash open. The stop is sent as a % of price so it maps onto the CFD.
 
 Usage:  python3 scanner.py            (expects data/{SPY,QQQ,DIA,IWM}_D1.csv)
+        BIGD_NEWS_VETO="FOMC decision Wed" python3 scanner.py   -> no new entries, exits still run
 Writes: signals.txt (read by the EA), state.json (virtual positions), journal.csv
 """
 import csv
@@ -137,7 +138,11 @@ def main():
         if last.close > last.sma_t and last.rsi2 < RSI_LO:
             cands.append((last.rsi2, sym, last))
     cands.sort()
+    veto = os.environ.get("BIGD_NEWS_VETO", "").strip()      # set by the daily job on big news days
     for r, sym, last in cands:
+        if veto:
+            log.append((sym, "VETO", f"RSI2 {r:.1f} signal skipped for news: {veto}"))
+            continue
         if len(positions) >= MAX_OPEN:
             log.append((sym, "SKIP", f"RSI2 {r:.1f} but {MAX_OPEN} positions already open"))
             continue

@@ -1,2 +1,2 @@
 # bigd-trades
-don't worry about it
+Signals for the BigD MT5 bot. Demo account.

@@ -11,11 +11,16 @@ Automated signals for the BigD MT5 demo account.
 
 **Strategy:** buy short dips in an uptrend on US stock indices.
 Buy when close > SMA(200) and RSI(2) < 10. Exit when close > SMA(5), after 10 bars,
-or at the stop (3 x ATR(20)). Max 3 positions.
+or at the stop (3 x ATR(20)). One position at a time.
 
-**Risk rules enforced by the EA:** 1% risk per trade, 3% total open risk, stop on every
-trade, stop after 3 losing trades in a day, stop after -6% in a week, demo only unless
+**Risk rules enforced by the EA (Big D's call, 2026-10-24):** 20% of balance risked per
+trade while the balance is under $80, 15% from $80 on. One trade at a time, stop on every
+trade, stop after 3 losing trades in a day or -40% in a week, demo only unless
 `InpAllowLive` is switched on. Kill switch: `enabled=0` in `signals.txt`.
+
+At these settings the 2009-2026 replay went $50 -> $102 but fell to $21 on the way
+(-81% max drawdown). One-year Monte Carlo: median ~$53, 44% chance of ending below $50,
+21% chance of reaching $80.
 
 **Backtest (2009-2026, costs + financing included):** see `RESULTS.md`.
 Small but consistent edge. Not a money printer.

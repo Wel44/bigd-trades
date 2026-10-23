@@ -4,7 +4,7 @@ BigD scanner: turns the latest daily bars into trade instructions for the MT5 EA
 Strategy (backtested 2009-2026 on SPY/QQQ/DIA/IWM, see research/):
   BUY  when close > SMA(200) and RSI(2) < 10
   EXIT when close > SMA(5), or after 10 bars, or the stop (3 x ATR20) is hit
-  Max 3 open positions (1% risk each, 3% total). Lowest RSI gets priority.
+  One position at a time (Big D runs 20% risk per trade, 15% from $80). Lowest RSI gets priority.
 
 Signals are computed on the ETF proxies and executed on the matching index CFD
 at the next US cash open. The stop is sent as a % of price so it maps onto the CFD.
@@ -29,7 +29,7 @@ SIGNALS = os.path.join(HERE, "signals.txt")
 JOURNAL = os.path.join(HERE, "journal.csv")
 
 PROXIES = {"SPY": "US500", "QQQ": "US100", "DIA": "US30", "IWM": "US2000"}
-RSI_LO, TREND, EXIT_MA, STOP_ATR, ATR_N, MAX_BARS, MAX_OPEN = 10, 200, 5, 3.0, 20, 10, 3
+RSI_LO, TREND, EXIT_MA, STOP_ATR, ATR_N, MAX_BARS, MAX_OPEN = 10, 200, 5, 3.0, 20, 10, 1
 NY = ZoneInfo("America/New_York")
 UTC = dt.timezone.utc
 EXEC_WINDOW_H = 6          # an instruction stays valid this many hours after the open

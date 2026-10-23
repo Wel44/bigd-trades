@@ -9,7 +9,7 @@
 //|  TYPE = OPEN or CLOSE. Plus "enabled=0/1" kill switch line.      |
 //+------------------------------------------------------------------+
 #property copyright   "Big D"
-#property version     "1.00"
+#property version     "1.10"
 #property description "Executes signals from github.com/Wel44/bigd-trades with hard risk limits."
 
 #include <Trade\Trade.mqh>
@@ -19,10 +19,12 @@ input string InpUrl          = "https://raw.githubusercontent.com/Wel44/bigd-tra
 input int    InpPollSec      = 120;     // Check for new signals every N seconds
 
 input group "Risk (your rules)"
-input double InpRiskPct      = 1.0;     // Risk per trade (% of balance)
-input double InpMaxOpenRisk  = 3.0;     // Max total open risk (%)
+input double InpRiskPct      = 20.0;    // Risk per trade (% of balance) while balance is below the tier
+input double InpTierBalance  = 80.0;    // From this balance on, use the lower risk below
+input double InpRiskPctAbove = 15.0;    // Risk per trade (% of balance) at or above the tier
+input double InpMaxOpenRisk  = 20.0;    // Max total open risk (%): 20 = one trade at a time
 input int    InpMaxLossDay   = 3;       // Losing trades per day before stopping
-input double InpMaxWeekDD    = 6.0;     // Weekly drawdown (%) before stopping
+input double InpMaxWeekDD    = 40.0;    // Weekly drawdown (%) before stopping
 input int    InpMaxHoldDays  = 16;      // Safety: close anything older than this (calendar days)
 input double InpMaxSpreadPct = 0.05;    // Skip if spread is wider than this % of price
 input bool   InpAllowLive    = false;   // Allow trading on a REAL account
@@ -187,7 +189,7 @@ void Handle(string ln)
    if(lots == 0)
    {
       MarkDone(doneKey, StringFormat("%s skipped: smallest size risks %.1f%% (limit %.1f%%). Needs a bigger balance.",
-                                     id, riskPct, InpRiskPct));
+                                     id, riskPct, RiskPctNow()));
       return;
    }
    if(OpenRiskPct() + riskPct > InpMaxOpenRisk + 1e-6)
@@ -248,6 +250,11 @@ string ResolveSymbol(string alias)
    return "";
 }
 
+double RiskPctNow()                  // 20% below the tier balance, 15% at or above it
+{
+   return (AccountInfoDouble(ACCOUNT_BALANCE) >= InpTierBalance) ? InpRiskPctAbove : InpRiskPct;
+}
+
 double LossPerLot(string sym, double dist)
 {
    double tv = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_VALUE_LOSS);
@@ -265,11 +272,12 @@ double LotsForRisk(string sym, double slDist, double &riskPctOut)
    double mx   = SymbolInfoDouble(sym, SYMBOL_VOLUME_MAX);
    double step = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
    if(bal <= 0 || lpl <= 0 || step <= 0) return -1;            // data not ready: retry later
-   double lots = MathFloor(bal * InpRiskPct / 100.0 / lpl / step + 1e-9) * step;
+   double rp   = RiskPctNow();
+   double lots = MathFloor(bal * rp / 100.0 / lpl / step + 1e-9) * step;
    if(lots < mn) lots = mn;
    if(lots > mx) lots = mx;
    riskPctOut = lots * lpl / bal * 100.0;
-   if(riskPctOut > InpRiskPct * 1.05) return 0;      // never exceed the per-trade rule
+   if(riskPctOut > rp * 1.05) return 0;              // never exceed the per-trade rule
    return NormalizeDouble(lots, 2);
 }
 
@@ -349,9 +357,9 @@ void ShowStatus()
       ulong t = PositionGetTicket(i);
       if(t != 0 && (ulong)PositionGetInteger(POSITION_MAGIC) == InpMagic) mine++;
    }
-   Comment(StringFormat("BigD SignalBot\nStatus: %s\nSignals generated: %s\nOpen positions: %d  |  open risk %.2f%%\n"
+   Comment(StringFormat("BigD SignalBot  |  risk per trade now %.0f%%\nStatus: %s\nSignals generated: %s\nOpen positions: %d  |  open risk %.2f%%\n"
                         "Losses today: %d/%d  |  week drawdown %.1f%%/%.1f%%\nLast: %s",
-                        lastStatus, genTime, mine, OpenRiskPct(), LossesToday(), InpMaxLossDay,
+                        RiskPctNow(), lastStatus, genTime, mine, OpenRiskPct(), LossesToday(), InpMaxLossDay,
                         WeekDrawdownPct(), InpMaxWeekDD, lastAction));
 }
 //+------------------------------------------------------------------+

@@ -1,4 +1,4 @@
 # BigD signals. Format: TYPE|ID|SYMBOL|SIDE|STOP_PCT|EXEC_AFTER_UTC|EXPIRES_UTC
 enabled=1
-generated=2026-11-05T22:18:55Z
-bar_date=2026-11-05
+generated=2026-11-06T22:18:52Z
+bar_date=2026-11-06
